@@ -1,0 +1,56 @@
+Web interface allowing users to change passwords for a Squid and Samba servers
+at once
+
+Copyright 2012 Liria Tecnologia
+License: GPL
+
+ABOUT
+-----
+
+This is a CGI application which enables to change Squid and Samba passwords at
+once through a web interface. It only works with an htpasswd password file for
+Squid passwords and an smbpasswd file for Samba passwords (does not work with
+TDBSAM, LDAP or other authentication schemes).
+
+INSTALL
+-------
+
+In order to install the application, you should set up Apache or any other web 
+server to serve CGI scripts and copy the file "change_password.cgi" to the 
+"cgi-bin" directory.
+
+This application is written in Python, so that it needs an installation of 
+Python 2.7 or newer (not 3.0 yet :-) on the server. Also, it needs a Python
+Library called "passlib" (http://packages.python.org/passlib/) which is not
+part of the Python Standart Library. To install it, you can use pip:
+
+  # pip install passlib
+
+CONFIG
+------
+
+The config must be set up in "change_password.cgi" file. In the beginning of
+the file, there is a config area, where you should set the paths to Squid and
+Samba password files. Besides that, you can change the HTML design and the
+messages to be presented to the users.
+
+In order to work, the web server user must have write permission over the
+Squid and Samba files indicated on the config area. On Debian with Apache
+server, this can be set up with 
+
+  # chgrp www-data path-to-the-file
+
+Before using the web interface, the users must already be added to the Samba
+password file and optionally to the Squid password file (if they don't exist
+on the Squid password file, they are added automatically after the first
+password change).
+
+USE
+---
+
+After installation and configuration, users may access the web interface through
+the cgi file. On Debian with the default configuration, the address would look
+like:
+
+  http://server-address/cgi-bin/change_password.cgi
+
