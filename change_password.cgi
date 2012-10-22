@@ -20,12 +20,24 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Changelog:
+
+2012-10-15
+Initial commit.
+
+2012-10-22
+Workaround to permit to change the script file name;
+Improvements on error handling.
 '''
 
 import cgi
+import os
 from passlib.apache import HtpasswdFile
 from passlib.hash import nthash
 from textwrap import dedent
+
+filename = os.path.basename(__file__)
 
 ################################################################################
 # Config Area
@@ -34,6 +46,11 @@ from textwrap import dedent
 # Password files
 smbpasswd_path = "/etc/samba/smbpasswd"
 squid_passwd_path = "/etc/squid/squid_passwd"
+
+# Script directory on http server (if located at http://server-address/cgi-bin,
+# this setting should be "/cgi-bin". Another example is "/scripts/cgi-bin" when
+# the script is located at http://server-address/scripts/cgi-bin)
+script_dir = "/cgi-bin"
 
 # CSS Styles
 css = dedent(
@@ -146,7 +163,7 @@ template = dedent(
 # Form (fields used to change the passwords)
 form = dedent(
     '''\
-    <form  method="post" id="change_password" action="/cgi-bin/change_password.py">
+    <form  method="post" id="change_password" action="%s">
       <table width="100%" cellspacing="0px" cellpadding="2px" border="0">
         <tr>
           <td class="label">Usuário:</td><td><input class="text" type="text" name="user" value="" /></td>
@@ -178,11 +195,11 @@ response = dedent(
       %s
     </div>
     <div class="back">
-      <a href="/cgi-bin/change_password.py">Voltar</a>
+      <a href="%s">Voltar</a>
     </div>
     '''
     )
-                                          
+
 # Messages
 
 # Success message
@@ -203,8 +220,8 @@ msg_error_invalid_user = "Usuário não cadastrado"
 # Error when one of the fields is left blank
 msg_error_invalid_data = "Dados inválidos"
 
-# Error on changing the password either on Squid or Samba (verification after
-# the password change does not match the new password)
+# Error on changing the password either of Squid or Samba (due to write 
+# permission on one of the files)
 msg_error_setpassword = "Erro ao alterar a senha. Entre em contato com o administrador do sistema"
 
 # Error on opening the Squid or Samba password files
@@ -223,6 +240,13 @@ msgs = (msg_success,
         msg_error_setpassword,
         msg_error_openfile,
         )
+
+# Append script location and name to the templates
+script_location = script_dir + "/" + filename
+form = form.replace("%", "%%")
+form = form.replace("%%s", "%s")
+form = form % script_location
+response = response % ("%s", script_location)
 
 form = template % (css, form)
 response = template % ('%s', response) % (css.replace('%', '%%'), '%s')
@@ -269,16 +293,26 @@ def process_cgi(smbpasswd_path, squid_passwd_path, form, response, msgs):
                 if smb_password_resp == True:
                     if len(new_password) >= 4:
                         if new_password == new_password_2:
-                            smbpasswd.set_password(user, new_password)
-                            smbpasswd.save()
-                            squid_passwd.set_password(user, new_password)
-                            squid_passwd.save()
-                            if smbpasswd.check_password(user, new_password):
-                                if squid_passwd.check_password(user,
-                                                               new_password):
-                                    msg = msg_success
-                                else:
-                                    msg = msg_error_setpassword
+                            change_ok = True
+                            change_ok = True
+                            try:
+                                smbpasswd.set_password(user, new_password)
+                                smbpasswd.save()
+                            except:
+                                change_ok = False
+                            if change_ok == True:
+                                try:
+                                    squid_passwd.set_password(user,
+                                                              new_password)
+                                    squid_passwd.save()
+                                except:
+                                    # Undo Samba password set
+                                    smbpasswd.set_password(user,
+                                                           current_password)
+                                    smbpasswd.save()
+                                    change_ok = False
+                            if change_ok == True:
+                                msg = msg_success
                             else:
                                 msg = msg_error_setpassword
                         else:

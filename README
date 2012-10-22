@@ -20,7 +20,7 @@ server to serve CGI scripts and copy the file "change_password.cgi" to the
 "cgi-bin" directory.
 
 This application is written in Python, so that it needs an installation of 
-Python 2.7 or newer (not 3.0 yet :-) on the server. Also, it needs a Python
+Python 2.6 or newer (not 3.0 yet :-) on the server. Also, it needs a Python
 Library called "passlib" (http://packages.python.org/passlib/) which is not
 part of the Python Standart Library. To install it, you can use pip:
 
@@ -31,14 +31,14 @@ CONFIG
 
 The config must be set up in "change_password.cgi" file. In the beginning of
 the file, there is a config area, where you should set the paths to Squid and
-Samba password files. Besides that, you can change the HTML design and the
-messages to be presented to the users.
+Samba password files and to the CGI script on the web server. Besides that,
+you can change the HTML design and the messages to be presented to the users.
 
 In order to work, the web server user must have write permission over the
 Squid and Samba files indicated on the config area. On Debian with Apache
 server, this can be set up with 
 
-  # chgrp www-data path-to-the-file
+  # chown www-data path-to-the-file
 
 Before using the web interface, the users must already be added to the Samba
 password file and optionally to the Squid password file (if they don't exist
@@ -54,3 +54,4 @@ like:
 
   http://server-address/cgi-bin/change_password.cgi
 
+The name of the script can be changed, if desired.
