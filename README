@@ -1,16 +1,17 @@
-Web interface allowing users to change passwords for a Squid and Samba servers
-at once
+Web interface allowing users to change passwords for either a Squid or a Samba
+server or both at once
 
-Copyright 2012 Liria Tecnologia
+Author: Renato Candido <renato@liria.com.br>
+Copyright 2012 Liria Tecnologia <http://www.liria.com.br>
 License: GPL
 
 ABOUT
 -----
 
-This is a CGI application which enables to change Squid and Samba passwords at
-once through a web interface. It only works with an htpasswd password file for
-Squid passwords and an smbpasswd file for Samba passwords (does not work with
-TDBSAM, LDAP or other authentication schemes).
+This is a CGI application which enables to change Squid or Samba passwords or
+both at once through a web interface. It only works with an htpasswd password
+file for Squid passwords and an smbpasswd file for Samba passwords (does not 
+work with TDBSAM, LDAP or other authentication schemes).
 
 INSTALL
 -------
@@ -31,8 +32,9 @@ CONFIG
 
 The config must be set up in "change_password.cgi" file. In the beginning of
 the file, there is a config area, where you should set the paths to Squid and
-Samba password files and to the CGI script on the web server. Besides that,
-you can change the HTML design and the messages to be presented to the users.
+Samba password files (one or another or both) and to the CGI script on the web
+server. Besides that, you can change the HTML design and the messages to be
+presented to the users.
 
 In order to work, the web server user must have write permission over the
 Squid and Samba files indicated on the config area. On Debian with Apache
@@ -40,10 +42,8 @@ server, this can be set up with
 
   # chown www-data path-to-the-file
 
-Before using the web interface, the users must already be added to the Samba
-password file and optionally to the Squid password file (if they don't exist
-on the Squid password file, they are added automatically after the first
-password change).
+Before using the web interface, the users must already be added to the Samba,
+Squid or both password files with a initial password.
 
 USE
 ---

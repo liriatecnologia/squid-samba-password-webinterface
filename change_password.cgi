@@ -6,7 +6,8 @@ Web interface allowing users to change passwords for a Squid and
 Samba servers at once. For information on how to install, see the
 README file.
 
-Copyright 2012 Liria Tecnologia
+Author: Renato Candido <renato@liria.com.br>
+Copyright 2012 Liria Tecnologia <http://www.liria.com.br>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,6 +30,10 @@ Initial commit.
 2012-10-22
 Workaround to permit to change the script file name;
 Improvements on error handling.
+
+2013-10-22
+Improved templates by using Template Strings;
+Implemented the possibility of using either Squid or Samba or both.
 '''
 
 import cgi
@@ -36,6 +41,7 @@ import os
 from passlib.apache import HtpasswdFile
 from passlib.hash import nthash
 from textwrap import dedent
+from string import Template
 
 filename = os.path.basename(__file__)
 
@@ -44,8 +50,8 @@ filename = os.path.basename(__file__)
 ################################################################################
 
 # Password files
-smbpasswd_path = "/etc/samba/smbpasswd"
-squid_passwd_path = "/etc/squid/squid_passwd"
+smbpasswd_path = "/etc/samba/smbpasswd" # Leave empty ("") if you do not wish to use
+squid_passwd_path = "/etc/squid/squid_passwd" # Leave empty ("") if you do not wish to use
 
 # Script directory on http server (if located at http://server-address/cgi-bin,
 # this setting should be "/cgi-bin". Another example is "/scripts/cgi-bin" when
@@ -133,7 +139,7 @@ css = dedent(
     )
 
 # Base template
-template = dedent(
+base_template = Template(dedent(
     '''\
     Content-type: text/html
     
@@ -141,7 +147,7 @@ template = dedent(
       <head>
         <meta charset="UTF-8"> 
         <title>Mudança de senha dos servidores de dados e internet</title>
-        %s
+        $css
       </head>    
       <body>
         <div class="databox">
@@ -149,7 +155,7 @@ template = dedent(
             Mudança de senha dos servidores de dados e internet
           </div>
           <div class="boxbody">
-            %s
+            $content
           </div>
         </div>
         <div class="liria">
@@ -158,12 +164,12 @@ template = dedent(
       </body>
     </html>
     '''
-    )
+    ))
 
 # Form (fields used to change the passwords)
-form = dedent(
+form = Template(dedent(
     '''\
-    <form  method="post" id="change_password" action="%s">
+    <form  method="post" id="change_password" action="$action">
       <table width="100%" cellspacing="0px" cellpadding="2px" border="0">
         <tr>
           <td class="label">Usuário:</td><td><input class="text" type="text" name="user" value="" /></td>
@@ -186,70 +192,81 @@ form = dedent(
       </table>
     </form>
     '''
-    )
+    ))
 
 # Response (where the success or error messages are presented)
-response = dedent(
+response = Template(dedent(
     '''\
     <div class="msgbox">
-      %s
+      $message
     </div>
     <div class="back">
-      <a href="%s">Voltar</a>
+      <a href="$back">Voltar</a>
     </div>
     '''
-    )
+    ))
 
 # Messages
 
-# Success message
-msg_success = "Senha alterada com sucesso"
+# Success messages
+msg_success_squid = "Senha do servidor de internet alterada com sucesso."
+msg_success_samba = "Senha do servidor de dados alterada com sucesso."
+msg_success_2 = "Senha do servidor de dados e internet alterada com sucesso."
+msg_success_0 = "Nenhuma senha alterada. Por favor configure para alterar as senhas do servidor de dados ou internet."
 
 # Password confirmation does not match the new password
-msg_error_new_password_2 = "Confirmação da nova senha não coincide com a senha digitada"
+msg_error_new_password_2 = "Confirmação da nova senha não coincide com a senha digitada."
 
 # Password too short (min. 4 characters)
-msg_error_password_length = "A nova senha deve ter pelo menos 4 caracteres"
+msg_error_password_length = "A nova senha deve ter pelo menos 4 caracteres."
 
 # Invalid current password
-msg_error_current_password = "Senha atual incorreta"
+msg_error_current_password_squid = "Senha atual do servidor de internet incorreta."
+msg_error_current_password_samba = "Senha atual do servidor de dados incorreta."
 
-# User does not exist
-msg_error_invalid_user = "Usuário não cadastrado"
+# User does not exist on Squid or Samba files
+msg_error_invalid_user_squid = "Usuário não cadastrado no servidor de internet."
+msg_error_invalid_user_samba = "Usuário não cadastrado no servidor de dados."
 
 # Error when one of the fields is left blank
-msg_error_invalid_data = "Dados inválidos"
+msg_error_invalid_data = "Dados inválidos. Por favor, preencha todos os campos."
 
-# Error on changing the password either of Squid or Samba (due to write 
+# Error on changing the password of Squid or Samba (due to write 
 # permission on one of the files)
-msg_error_setpassword = "Erro ao alterar a senha. Entre em contato com o administrador do sistema"
+msg_error_setpassword_squid = "Erro ao alterar a senha do servidor de internet. Entre em contato com o administrador do sistema."
+msg_error_setpassword_samba = "Erro ao alterar a senha do servidor de dados. Entre em contato com o administrador do sistema."
 
 # Error on opening the Squid or Samba password files
-msg_error_openfile = "Arquivo de senhas não encontrado. Entre em contato com o administrador do sistema."
+msg_error_openfile_squid = "Arquivo de senhas do servidor de internet não encontrado. Entre em contato com o administrador do sistema."
+msg_error_openfile_samba = "Arquivo de senhas do servidor de dados não encontrado. Entre em contato com o administrador do sistema."
 
 ################################################################################
 # End of Config Area
 ################################################################################
-
-msgs = (msg_success,
+msgs = (msg_success_squid,
+        msg_success_samba,
+        msg_success_2,
+        msg_success_0,
         msg_error_new_password_2,
         msg_error_password_length,
-        msg_error_current_password,
-        msg_error_invalid_user,
+        msg_error_current_password_squid,
+        msg_error_current_password_samba,        
+        msg_error_invalid_user_squid,
+        msg_error_invalid_user_samba,        
         msg_error_invalid_data,
-        msg_error_setpassword,
-        msg_error_openfile,
+        msg_error_setpassword_squid,
+        msg_error_setpassword_samba,
+        msg_error_openfile_squid,
+        msg_error_openfile_samba,
         )
 
 # Append script location and name to the templates
 script_location = script_dir + "/" + filename
-form = form.replace("%", "%%")
-form = form.replace("%%s", "%s")
-form = form % script_location
-response = response % ("%s", script_location)
+form = form.safe_substitute(action=script_location)
+response = response.safe_substitute(back=script_location)
 
-form = template % (css, form)
-response = template % ('%s', response) % (css.replace('%', '%%'), '%s')
+form = base_template.safe_substitute(css=css, content=form)
+response = Template(base_template.safe_substitute(css=css, content=response))
 
 def process_cgi(smbpasswd_path, squid_passwd_path, form, response, msgs):
     """
@@ -258,14 +275,26 @@ def process_cgi(smbpasswd_path, squid_passwd_path, form, response, msgs):
     """
     form_data = cgi.FieldStorage()
 
-    msg_success = msgs[0]
-    msg_error_new_password_2 = msgs[1]
-    msg_error_password_length = msgs[2]
-    msg_error_current_password = msgs[3]
-    msg_error_invalid_user = msgs[4]
-    msg_error_invalid_data = msgs[5]
-    msg_error_setpassword = msgs[6]
-    msg_error_openfile = msgs[7]
+    use_squid = not(squid_passwd_path == '')
+    use_samba = not(smbpasswd_path == '')
+    change_ok_samba = False
+    change_ok_squid = False
+
+    msg_success_squid = msgs[0]
+    msg_success_samba = msgs[1]
+    msg_success_2 = msgs[2]
+    msg_success_0 = msgs[3]
+    msg_error_new_password_2 = msgs[4]
+    msg_error_password_length = msgs[5]
+    msg_error_current_password_squid = msgs[6]
+    msg_error_current_password_samba = msgs[7]
+    msg_error_invalid_user_squid = msgs[8]
+    msg_error_invalid_user_samba = msgs[9]
+    msg_error_invalid_data = msgs[10]
+    msg_error_setpassword_squid = msgs[11]
+    msg_error_setpassword_samba = msgs[12]
+    msg_error_openfile_squid = msgs[13]
+    msg_error_openfile_samba = msgs[14]
     
     if "submit" in form_data:
         if ("user" in form_data and "current_password" in form_data and
@@ -274,59 +303,89 @@ def process_cgi(smbpasswd_path, squid_passwd_path, form, response, msgs):
             current_password = form_data.getvalue("current_password")
             new_password = form_data.getvalue("new_password")
             new_password_2 = form_data.getvalue("new_password_2")
-            
-            try:
-                smbpasswd = SmbpasswdFile(smbpasswd_path)
-            except IOError:
-                msg = msg_error_openfile
-                print response % msg
-                return
-            try:
-                squid_passwd = HtpasswdFile(squid_passwd_path)
-            except IOError:
-                msg = msg_error_openfile
-                print response % msg
-                return
+            if len(new_password) >= 4:
+                if new_password == new_password_2:
+                    if use_squid:
+                        try:
+                            squid_passwd = HtpasswdFile(squid_passwd_path)
+                        except IOError:
+                            msg = msg_error_openfile_squid
+                            print response.safe_substitute(message=msg)
+                            return
+                    if use_samba:
+                        try:
+                            smbpasswd = SmbpasswdFile(smbpasswd_path)
+                        except IOError:
+                            msg = msg_error_openfile_samba
+                            print response.safe_substitute(message=msg)
+                            return
 
-            smb_password_resp = smbpasswd.check_password(user, current_password)
-            if smb_password_resp is not None:
-                if smb_password_resp == True:
-                    if len(new_password) >= 4:
-                        if new_password == new_password_2:
-                            change_ok = True
-                            change_ok = True
-                            try:
-                                smbpasswd.set_password(user, new_password)
-                                smbpasswd.save()
-                            except:
-                                change_ok = False
-                            if change_ok == True:
+                    if use_samba:
+                        smb_password_resp = smbpasswd.check_password(user, current_password)
+                        if smb_password_resp is not None:
+                            if smb_password_resp == True:
+                                change_ok_samba = True
                                 try:
-                                    squid_passwd.set_password(user,
-                                                              new_password)
-                                    squid_passwd.save()
-                                except:
-                                    # Undo Samba password set
-                                    smbpasswd.set_password(user,
-                                                           current_password)
+                                    smbpasswd.set_password(user, new_password)
                                     smbpasswd.save()
-                                    change_ok = False
-                            if change_ok == True:
-                                msg = msg_success
+                                except:
+                                    msg = msg_error_setpassword_samba
+                                    change_ok_samba = False
+                                    print response.safe_substitute(message=msg)
+                                    return
                             else:
-                                msg = msg_error_setpassword
+                                 msg = msg_error_current_password_samba
+                                 print response.safe_substitute(message=msg)
+                                 return
                         else:
-                            msg = msg_error_new_password_2
+                            msg = msg_error_invalid_user_samba
+                            print response.safe_substitute(message=msg)
+                            return
+
+                    if use_squid:
+                        if (use_samba and change_ok_samba) or not(use_samba):
+                            squid_password_resp = squid_passwd.check_password(user, current_password)
+                            if squid_password_resp is not None:
+                                if squid_password_resp == True:
+                                    change_ok_squid = True
+                                    try:
+                                        squid_passwd.set_password(user, new_password)
+                                        squid_passwd.save()
+                                    except:
+                                         msg = msg_error_setpassword_squid
+                                         change_ok_squid = False                                         
+                                else:
+                                     msg = msg_error_current_password_squid                                     
+                            else:
+                                 msg = msg_error_invalid_user_squid                                 
+
+                            if change_ok_samba and not(change_ok_squid):
+                                smbpasswd.set_password(user, current_password)
+                                smbpasswd.save()
+                                print response.safe_substitute(message=msg)
+                                return
+
+                    if use_samba:
+                        if use_squid:
+                            if change_ok_samba and change_ok_squid:
+                                msg = msg_success_2
+                        else:
+                            if change_ok_samba:
+                                msg = msg_success_samba
                     else:
-                        msg = msg_error_password_length
+                        if use_squid:
+                            if change_ok_squid:
+                                msg = msg_success_squid
+                        else:
+                            msg = msg_success_0
                 else:
-                    msg = msg_error_current_password
+                    msg = msg_error_new_password_2
             else:
-                msg = msg_error_invalid_user
+                msg = msg_error_password_length
         else:
             msg = msg_error_invalid_data
-            
-        print response % msg
+
+        print response.safe_substitute(message=msg)
     else:
         print form
 
@@ -420,8 +479,8 @@ def make_dic_from_smbpasswd(filepath):
     smbpasswd_file.close()
     
     smbpasswd_list = smbpasswd_contents.split('\n')
-    for i in range(len(smbpasswd_list)):
-        smbpasswd_list[i] = smbpasswd_list[i].split(':')
+    for i,smbpasswd_item in enumerate(smbpasswd_list):
+        smbpasswd_list[i] = smbpasswd_item.split(':')
         # Line number of the item on the last index of the list
         # smbpasswd_list[i] (starting at 0)
         smbpasswd_list[i].append(i)
