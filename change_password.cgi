@@ -51,7 +51,7 @@ filename = os.path.basename(__file__)
 
 # Password files
 smbpasswd_path = "/etc/samba/smbpasswd" # Leave empty ("") if you do not wish to use
-squid_passwd_path = "/etc/squid/squid_passwd" # Leave empty ("") if you do not wish to use
+squid_passwd_path = "/etc/squid3/squid_passwd" # Leave empty ("") if you do not wish to use
 
 # Script directory on http server (if located at http://server-address/cgi-bin,
 # this setting should be "/cgi-bin". Another example is "/scripts/cgi-bin" when
